@@ -1,40 +1,77 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
+  <div class="col-6 flex justify-center ml-auto mr-auto">
+    <form class="block left-align">
+      <label>SITE:</label>
+      <input id="site" type="url" name="site">
+      <button type="button" @click="generateURL()">Submit</button>
+      <br>
+      <br>
+      <span>Shorten URL: <a target="_blank" :href="inputSite">{{generatedUrl}}</a></span>
+    </form>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'HelloWorld',
+  name: '',
   props: {
-    msg: String
+  },
+  data () {
+    return {
+      dbObj: '',
+      generatedUrl: '',
+      generatedString: '',
+      inputSite: ''
+    }
+  },
+  created () {
+    var Database_Name = 'MyDatabase';  
+    var Version = 1.0;  
+    var Text_Description = 'My First Web-SQL Example';  
+    var Database_Size = 2 * 1024 * 1024;  
+    this.dbObj = openDatabase(Database_Name, Version, Text_Description, Database_Size);
+    this.createDB();
+    if (window.location.pathname.length > 1) {
+      this.generatedUrl = window.location.href;
+      this.redirect()
+    }
+  },
+  methods: {
+    createDB () {
+      var obj = this.dbObj
+      obj.transaction(function (tx)  
+      {
+        tx.executeSql('CREATE TABLE IF NOT EXISTS url_table (url, site)');
+      });
+    },
+    generateURL () {
+      let generate = Math.random().toString(36).substring(7);
+      this.generatedString = generate;
+      this.insertData(generate);
+    },
+    insertData (generate) {
+      var site = document.getElementById("site").value;
+      this.inputSite = site;
+      var url = 'http://activelamp.local:8080/' + generate;
+      var obj = this.dbObj
+      if (site != '') {
+        this.generatedUrl = url;
+        obj.transaction(function (tx) {  
+          tx.executeSql('insert into url_table (url, site) values("' + url + '", "' + site + '")');
+        });
+      } else {
+        alert('Enter site url');
+      }
+    },
+    redirect () {
+      var obj = this.dbObj;
+      var generated = this.generatedUrl
+      obj.transaction(function (tx) {  
+        tx.executeSql('SELECT * from url_table where url="' + generated + '"', [], function (tx, results) {
+          window.location.replace(results.rows.item(0).site);
+        });
+      });  
+    }
   }
 }
 </script>
@@ -54,5 +91,26 @@ li {
 }
 a {
   color: #42b983;
+}
+.left-align {
+  text-align: left;
+}
+.ml-auto {
+  margin-left: auto;
+}
+.mr-auto {
+  margin-right: auto;
+}
+.col-6 {
+  width: 50%;
+}
+.block {
+  display: block;
+}
+.flex {
+  display: flex;
+}
+.justify-center {
+  justify-content: center;
 }
 </style>
